@@ -1,3 +1,4 @@
 # neofs-node-analysis
 
-[Morph](./morph.md)
+[Morph](./morph/morph.md)
+
