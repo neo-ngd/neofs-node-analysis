@@ -176,7 +176,18 @@ b)alias.go
 定义/neofs-api-go 内一部分类型的别名
 
 c)过滤器
-1.定义FilterPipeline接口
+1.定义过滤器FilterPipeline属性和方法以及方法实现
+    //结构体属性
+	filterPipeline struct {
+		*sync.RWMutex
+		name     string
+		pri      uint64
+		filterFn FilterFunc
+		maxSubPri  uint64
+		mSubResult map[string]map[FilterCode]FilterCode
+		subFilters []FilterPipeline
+	}
+    //方法
 	FilterPipeline interface {
 		Pass(ctx context.Context, meta *ObjectMeta) *FilterResult
 		PutSubFilter(params SubFilterParams) error
@@ -184,6 +195,44 @@ c)过滤器
 		SetPriority(uint64)
 		GetName() string
 	}
+    //方法实现//使用锁线程安全
+    ...
+
+2.定义过滤结果状态结构体和相应常量和变量以及相应的生成函数
+    //结构体
+	FilterResult struct {
+		c FilterCode
+		e error
+	}
+    //常量
+    const{
+    	CodeUndefined=0
+	    CodePass=1
+	    CodeFail=2
+	    CodeIgnore=3
+    }
+    //变量 FilterResult类型
+	rPass
+	rFail
+	rIgnore
+	rUndefined
+    //生成方法
+    ResultPass()
+    ResultFail()
+    ResultIgnore()
+    ResultUndefined()
+    ResultWithError()
+    //构造方法
+    func NewFilter(p *FilterParams) FilterPipeline 单过滤器
+    func AllPassIncludingFilter(name string, params ...*FilterParams) (FilterPipeline, error)过滤器链，需要所有过滤器都通过
+
+3.定义三个过滤方法
+//直接通过
+func SkippingFilterFunc(_ context.Context, _ *ObjectMeta) *FilterResult
+//包含ContainerID的过滤器
+func ContainerFilterFunc(cidList []CID) FilterFunc
+//元数据存储时隙是否小于某个时隙
+func StoredEarlierThanFilterFunc(epoch uint64)
 
 d)localstore.proto
 定义ObjectMeta消息类型
@@ -191,8 +240,106 @@ d)localstore.proto
 
 ​    
 
+### 类/接口设计
+
+接口
+
+```c#
+interface:
+ILocalstore{
+		public Put(context.Context, Object) throw Exception
+		public Object Get(Address) throw Exception
+		public Del(Address) throw Exception
+		public ObjectMeta Meta(Address) throw Exception
+		public Iterator Iterate(FilterPipeline, MetaHandler) throw Exception
+		public bool Has(Address) throw Exception
+		public ulong ObjectsCount() throw Exception
+
+		object.PositionReader//PRead(ctx context.Context, addr refs.Address, rng Range) ([]byte, error)
+		public long Size()
+	}
+```
+
+实现
+
+```c#
+Localstore:ILocalstore{
+	private	IBucket metaBucket;
+	private	IBucket blobBucket;
+    private Collector col;
+    
+    //构造函数
+    public Localstore(Params p)
+    //ILocalstore接口方法实现
+
+}
+class Params{
+    private IBucket blobBucket;
+    private IBucket metaBucket;
+    private Collector collector;
+    
+}
+```
+
+接口
+
+```c#
+IFilterPipeline{
+	public FilterResult	Pass(Context, meta ObjectMeta);
+	public PutSubFilter(SubFilterParams params) throw Exception
+	public ulong GetPriority();
+	public SetPriority(long)
+	public string GetName();
+}
+```
+
+实现
+
+```c#
+class FilterPipeline:IFilterPipeline
+{
+    private string name;
+    private ulong pri;
+    private function filterfunc;
+    private ulong maxSubPri;
+    private Map<string,Map<FilterCode,value>> mSubResult;
+    private FilterPipeline subFilters;
+    
+    //构造函数
+    public FilterPipeline(){
+        
+    }
+    
+    public static FilterPipeline AllPassIncludingFilter(name string, params ...*FilterParams)
+    
+    //IFilterPipeline接口实现
+    ...
+    
+    public FilterResult SkippingFilterFunc(_ context.Context, _ *ObjectMeta)
+    public FilterResult ContainerFilterFunc(CID[] cidList)
+    public FilterResult  StoredEarlierThanFilterFunc(ulong epoch)
+}
+
+class FilterResult
+{
+	FilterCode c
+	error e
+}
+//常量
+enum {
+    CodeUndefined=0,
+    CodePass=1,
+    CodeFail=2,
+    CodeIgnore=3
+}
+```
+
+
+
 ## 杂项
 
 ### 结构体系
 
-store----(取出Bucket)----->localstore
+store------>localstore
+
+FilterParam--->FilterPipeline
