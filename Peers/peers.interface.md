@@ -1,6 +1,6 @@
 ## Peers.Interface
 
-建立管理p2p连接，包含普通网路连接和grpc连接
+建立管理p2p连接，包含普通网络连接和grpc连接
 
 ### Transport
 

@@ -13,9 +13,12 @@ Peer ID string 类型，由Peer publickey创建
 ##### 函数
 
 * *IDFromPublicKey(pk \*ecdsa.PublicKey) ID*
-将pubickey转为bytes然后在调用IDFromBinary
+
+  将pubickey转为bytes然后在调用IDFromBinary
+
 * *IDFromBinary(b []byte) ID* 
-先计算hash256,然后使用
+
+  先计算hash256,然后使用
 github.com/multiformats/go-multihash 自我描述哈希方法 有c#包
 ```
 fn code  dig size hash digest
@@ -45,22 +48,35 @@ sha1     4 bytes  4 byte sha1 digest
 ##### 函数
 
 * *NewLocalPeer(addr multiaddr.Multiaddr, key \*ecdsa.PrivateKey) Peer*
-创建一个Peer实例，publickey由PrivateKey计算，只针对本地节点，使用私钥
+
+  创建一个Peer实例，publickey由PrivateKey计算，只针对本地节点，使用私钥
+
 * *NewPeer(addr multiaddr.Multiaddr, pub \*ecdsa.PublicKey, key \*ecdsa.PrivateKey) Peer*
-创建一个Peer实例，id由ID.IDFromPublicKey使用PublicKey计算而得。私钥可以为*nil*
+
+  创建一个Peer实例，id由ID.IDFromPublicKey使用PublicKey计算而得。私钥可以为*nil*
+
 
 ##### 方法
 
 * *SetPrivateKey(key \*ecdsa.PrivateKey) error*
-设置私钥
+
+  设置私钥
+
 * ID() ID
-获取ID
+
+  获取ID
+
 * Address() multiaddr.Multiaddr
-获取网络地址
+
+  获取网络地址
+
 * PublicKey() *ecdsa.PublicKey
-获取公钥
+
+  获取公钥
+
 * PrivateKey() (*ecdsa.PrivateKey, error)
-获取私钥
+
+  获取私钥
 
 #### 函数
 
@@ -70,17 +86,29 @@ sha1     4 bytes  4 byte sha1 digest
 #### 方法
 
 * *List(id ID, seed int64, count int) ([]ID, error)*
-除id之外的Peers根据距离seed由近到远排列,然后取出前count个
+  
+  除id之外的Peers根据距离seed由近到远排列,然后取出前count个
+
 * *Get(id ID) (Peer, error)*
-根据id返回Peer
+
+  根据id返回Peer
+
 * *Set(id ID, p Peer) error*
-设置id对应的Peer
+
+  设置id对应的Peer
+
 * *Rem(id ID) error*
-根据id删除Peer
+
+  根据id删除Peer
+
 * *Update(nm *netmap.NetMap)*
-根据Netmap中items的信息更新所有Peers信息
+
+  根据Netmap中items的信息更新所有Peers信息
+
+
 * *Filter(filter PeerFilter)*
-使用filter函数过滤符合条件的Peers
+
+  使用filter函数过滤符合条件的Peers
 
 ### Peers.Store
 
