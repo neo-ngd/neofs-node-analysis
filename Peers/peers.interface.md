@@ -7,7 +7,8 @@
 #### 依赖
 
 * github.com/rubyist/circuitbreaker
-断路器，如果请求达到了一定失败条件，比如失败n次，连续失败n次等，就会中断，所有请求都会阻断。但是期间会允许一些请求重试，如果这些请求成功，将重启链路。
+
+  断路器，如果请求达到了一定失败条件，比如失败n次，连续失败n次等，就会中断，所有请求都会阻断。但是期间会允许一些请求重试，如果这些请求成功，将重启链路。
   ```
   // Creates a circuit breaker that will trip if the function fails 10 times
   cb := circuit.NewThresholdBreaker(10)
@@ -45,13 +46,16 @@
 #### 方法
 
 * *Dial(ctx context.Context, addr multiaddr.Multiaddr, reset bool) (Connection, error)*
-使用addr指定的网络协议，连接addr指定的地址，返回一个Connection
+
+  使用addr指定的网络协议，连接addr指定的地址，返回一个Connection
 
 * *Listen(addr multiaddr.Multiaddr) (manet.Listener, error)*
-采用addr中指定的协议监听addr中地址，返回一个manet.Listener
+
+  采用addr中指定的协议监听addr中地址，返回一个manet.Listener
 
 * *breakerLookup(addr fmt.Stringer) \*circuit.Breaker*
-从panel中获取一个断路器，如果查找不到，根据addr创建一个name，来创建一个断路器
+
+  从panel中获取一个断路器，如果查找不到，根据addr创建一个name，来创建一个断路器
 
 ### Peers.Interface
 

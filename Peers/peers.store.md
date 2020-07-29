@@ -81,7 +81,8 @@ sha1     4 bytes  4 byte sha1 digest
 #### 函数
 
 * *NewSimpleStorage(capacity int, l \*zap.Logger) Storage*
-创建一个Peer.Storage实例，使用配置或者默认设置
+
+  创建一个Peer.Storage实例，使用配置或者默认设置
 
 #### 方法
 
