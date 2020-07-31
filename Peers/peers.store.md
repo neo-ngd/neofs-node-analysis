@@ -30,9 +30,9 @@ sha1     4 bytes  4 byte sha1 digest
 
 ##### 方法
 
-* String() string
-* Bytes() []byte
-* Equal(id ID) bool
+* *String() string*
+* *Bytes() []byte*
+* *Equal(id ID) bool*
 
 #### Peer
 
@@ -62,19 +62,19 @@ sha1     4 bytes  4 byte sha1 digest
 
   设置私钥
 
-* ID() ID
+* *ID() ID*
 
   获取ID
 
-* Address() multiaddr.Multiaddr
+* *Address() multiaddr.Multiaddr*
 
   获取网络地址
 
-* PublicKey() *ecdsa.PublicKey
+* *PublicKey() \*ecdsa.PublicKey*
 
   获取公钥
 
-* PrivateKey() (*ecdsa.PrivateKey, error)
+* *PrivateKey() (*ecdsa.PrivateKey, error)*
 
   获取私钥
 
@@ -102,7 +102,7 @@ sha1     4 bytes  4 byte sha1 digest
 
   根据id删除Peer
 
-* *Update(nm *netmap.NetMap)*
+* *Update(nm \*netmap.NetMap)*
 
   根据Netmap中items的信息更新所有Peers信息
 
