@@ -77,6 +77,14 @@ sha1     4 bytes  4 byte sha1 digest
 * *PrivateKey() (*ecdsa.PrivateKey, error)*
 
   获取私钥
+  
+#### Storage
+
+|Field|Type|Description|
+|-|-|-|
+|log| \*zap.Logger|输出日志|
+|mu  |  *sync.RWMutex|读写锁|
+|items| map[ID]Peer|存储Peer, key为ID|
 
 #### 函数
 
