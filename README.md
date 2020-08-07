@@ -4,9 +4,21 @@
 
 [Peers](./Peers/peers.md)
 
-[store](./store/store.md)
+[Store](./Store/store.md)
 
-[localstore](./localstore/localstore.md)
+[Localstore](./LocalStore/localstore.md)
+
+[Placement](./Placement/placement.md)
+
+[PlacementTool](./PlacementTools/placement.md)
+
+[ContainerService](./ContainerService/container.md)
+
+[ObjectService](./ObjectService/object.md)
+
+[SessionService](./SessionService/session.md)
+
+[StateService](./StateService/state.md)
 
 [Audit](./Audit/audit.md)
 
