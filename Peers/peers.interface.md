@@ -6,7 +6,7 @@
 
 #### 依赖
 
-* github.com/rubyist/circuitbreaker
+* github.com/rubyist/circuitbreaker c#: [Polly](https://www.nuget.org/packages/Polly/), [CircuitBreaker.Net](https://www.nuget.org/packages/CircuitBreaker.Net/)  ...
 
   断路器，如果请求达到了一定失败条件，比如失败n次，连续失败n次等，就会中断，所有请求都会阻断。但是期间会允许一些请求重试，如果这些请求成功，将重启链路。
   ```
@@ -27,7 +27,7 @@
   }, 0)
   ```
   
-* ipfs github.com/multiformats/go-multiaddr
+* ipfs github.com/multiformats/go-multiaddr 有c#:[TheDotNetLeague.MultiFormats.MultiAddress](https://www.nuget.org/packages/TheDotNetLeague.MultiFormats.MultiAddress/)
 
   可以自我描述的地址格式，比如`127.0.0.1:9090`我们无法判断是tcp还是udp还是什么其他协议，使用multiaddr格式可以具体表示为`/ip4/127.0.0.1/udp/9090/quic`
 
@@ -71,15 +71,15 @@ iface为Peers.Interface的实现
 | -------------- | ------------------------------------------------------------ | ---------------------------- |
 | log            |                                                              | 日志输出                     |
 | addr           | multiaddr.Multiaddr                                          | 本地地址                     |
-| tr             | transport.Transport                                          |                              |
+| tr             | transport.Transport                                          | 用于建立连接                 |
 | tick           | time.Duration                                                |                              |
 | idle           | time.Duration                                                |                              |
 | keepAlive      | time.Duration                                                |                              |
 | pingTTL        | time.Duration                                                |                              |
 | metricsTimeout | time.Duration                                                |                              |
-| grpc           | struct {<br>	// globalMutex used by garbage collector and other high<br> globalMutex \*sync.RWMutex <br>  // bookMutex resolves concurrent access to the new connection<br> bookMutex \*sync.RWMutex<br> // connBook contains connection info<br> // it's mutex resolves concurrent access to existed<br> connection connBook map[string]*connItem<br> } | 保存地址和对应的gprc链接实例 |
-| cons           | struct {<br> *sync.RWMutex items<br> map[string]transport.Connection<br>} | 保存除grpc连接之外的连接     |
-| lis            | struct {<br> *sync.RWMutex<br> items map[string]manet.Listener<br> } | 保存所有对地址的监听         |
+| grpc           | struct {<br>	// globalMutex used by garbage collector and other high<br> globalMutex **\*sync.RWMutex **<br>  // bookMutex resolves concurrent access to the new connection<br> bookMutex **\*sync.RWMutex**<br> // connBook contains connection info<br> // it's mutex resolves concurrent access to existed<br> connection connBook **map[string]*connItem**<br> } | 保存地址和对应的gprc链接实例 |
+| cons           | struct {<br> **\*sync.RWMutex**<br/> items **map[string]transport.Connection**<br>} | 保存除grpc连接之外的连接     |
+| lis            | struct {<br> **\*sync.RWMutex**<br> items **map[string]manet.Listener**<br> } | 保存所有对地址的监听         |
 
 #### 方法
 
