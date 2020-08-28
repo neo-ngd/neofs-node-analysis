@@ -1,4 +1,4 @@
-# Session相关代码调查分析
+# State.service相关代码调查分析
 
 ## 源代码范围
 
@@ -109,7 +109,6 @@ func newHealthy(p healthyParams) (res healthyResult, err error) {
 
 	return
 }
-
 ```
 
 **结构分析**
@@ -118,18 +117,15 @@ func newHealthy(p healthyParams) (res healthyResult, err error) {
 1.定义health检查参数
 	healthyParams struct {
 		dig.In
-
 		Logger   *zap.Logger
 		Viper    *viper.Viper
 		Place    placement.Component
 		Checkers []state.HealthChecker `group:"healthy"`
-
 		// for ChangeState
 		PrivateKey *ecdsa.PrivateKey
-
 		MorphNetmapContract *implementations.MorphNetmapContract
 	}
-2.定义health检查结果
+2.定义health检查结果结构体
 	healthyResult struct {
 		dig.Out
 
@@ -137,7 +133,7 @@ func newHealthy(p healthyParams) (res healthyResult, err error) {
 
 		StateService state.Service
 	}
-3.定义healthClient客户端结构体/接口方法和实现
+3.定义healthClient结构体/接口方法和实现
 	healthyClient struct {//线程安全
 		*sync.RWMutex
 		healthy func() error
@@ -145,6 +141,22 @@ func newHealthy(p healthyParams) (res healthyResult, err error) {
 	HealthyClient interface {
 		Healthy() error
 	}
+//方法实现
+func (h *healthyClient) Healthy() error {
+	if h.healthy == nil {
+		return errUnhealthy
+	}
+	return h.healthy()
+}
+
+func (h *healthyClient) setHandler(handler func() error) {
+	if handler == nil {
+		return
+	}
+	h.Lock()
+	h.healthy = handler
+	h.Unlock()
+}
 
 4.定义构造函数newHealthy
 func newHealthy(p healthyParams) (res healthyResult, err error)
@@ -152,8 +164,7 @@ func newHealthy(p healthyParams) (res healthyResult, err error)
 伪代码逻辑：
 1)利用healthyParams构建StateService参数
 2)利用StateService参数构建StateService服务
-3)构建healthyClient,并设置处理函数
-
+3)构建healthyClient,并设置处理函数handler
 ```
 
 
@@ -495,7 +506,7 @@ func (s *stateService) Register(g *grpc.Server) { state.RegisterStatusServer(g, 
 **结构分析**
 
 ```go
-1.定义stateService结构体和接口
+1.定义stateService结构体和接口接口实现
 	stateService struct {
 		state    Stater
 		config   *viper.Viper
@@ -510,22 +521,83 @@ func (s *stateService) Register(g *grpc.Server) { state.RegisterStatusServer(g, 
 		grpc.Service
 		Healthy() error
 	}
+//grpc.Service接口实现
+func (*stateService) Name()
+作用：GRPC服务名称，"StatusService"
+func (s *stateService) Register(g *grpc.Server)
+作用：注册GRPC服务
+
+//state.StatusServer接口方法实现
+Netmap(context.Context, *NetmapRequest) (*bootstrap.SpreadMap, error)
+作用：获取服务当前的network状态
+伪代码逻辑：
+1)跟新请求的TTL
+2)验证请求结构体
+3)获取stateService中network的状态
+4)如果无法获取network状态，则返回无服务异常
+
+Metrics(context.Context, *MetricsRequest) (*MetricsResponse, error)
+作用：改变当前节点的坐标
+伪代码逻辑：
+1)跟新请求的TTL
+2)验证请求结构体
+3)调用链上合约，跟新坐标
+
+HealthCheck(context.Context, *HealthRequest) (*HealthResponse, error)
+作用：检查所有检查项是否都正常
+伪代码逻辑：
+1)跟新请求的TTL
+2)验证请求结构体
+3)执行检查
+4)输出检查结果
+
+DumpConfig(context.Context, *DumpRequest) (*DumpResponse, error)
+作用：改变当前节点的配置
+伪代码逻辑：
+1)跟新请求的TTL
+2)验证请求结构体
+3)获取公钥并验证权限
+4)验证所有人
+5)调用链上合约，跟新Config
+
+DumpVars(context.Context, *DumpVarsRequest) (*DumpVarsResponse, error)
+作用：
+伪代码逻辑：
+1)跟新请求的TTL
+2)验证请求结构体
+3)获取公钥并验证权限
+4)验证所有人
+5)将状态中的值转json,并输出
+
+ChangeState(context.Context, *ChangeStateRequest) (*ChangeStateResponse, error)
+作用：改变当前节点的状态
+伪代码逻辑：
+1)验证请求结构体
+2)验证权限
+3)把请求State转换为NodeState
+4)构造State跟新参数
+5)调用链上合约，跟新State
+
 2.定义异常
 	errEmptyViper         = internal.Error("empty config")
 	errEmptyLogger        = internal.Error("empty logger")
 	errEmptyStater        = internal.Error("empty stater")
 	errUnknownChangeState = internal.Error("received unknown state")
     msgMissingRequestInitiator = "missing request initiator"
-3.
 
-
+3.声明构造函数func New(p Params) (Service, error) 
+作用：构造State service实例
+伪代码逻辑：
+1)Params参数参数检查
+2)构造StateService服务实例
+3)向StateService服务实例中追加HealthChecker
 ```
 
 
 
 ## 杂项
 
-
+State.service是负责节点State状态查询、更改等操作的GRPC服务
 
 
 
