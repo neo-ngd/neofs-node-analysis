@@ -121,7 +121,7 @@
 
 * *verifyRemote(ctx context.Context, params \*replication.ObjectVerificationParams) bool*
 
-  使用executor获取obj headers然后根据header中信息判断然后如果本地也存在此obj就通过verifyThroughHashes来校验，如果美帝没有，就调用executor.Get来获取obj然后获取完成后处理函数中执行校验
+  使用executor获取obj headers然后根据header中信息判断然后如果本地也存在此obj就通过verifyThroughHashes来校验，如果没有，就调用executor.Get来获取obj然后获取完成后处理函数中执行校验
 
 * *verifyThroughHashes(ctx context.Context, obj \*Object, node multiaddr.Multiaddr) (valid bool)*
 
@@ -129,7 +129,7 @@
 
 ## PlacementHonorer
 
-### ObjectStore
+### ObjectStorage
 
 |Field|Type|Description|
 |-|-|-|
@@ -149,8 +149,8 @@
 
 |Field|Type|Description|
 |-|-|-|
-|objectSource|ObjectSource|[ObjectStore](#ObjectStore)|
-|objectReceptacle|ObjectReceptacle |[ObjectStore](#ObjectStore)|
+|objectSource|ObjectSource|[ObjectStorage](#ObjectStorage)|
+|objectReceptacle|ObjectReceptacle |[ObjectStorage](#ObjectStorage)|
 |remoteStorageSelector|RemoteStorageSelector|[MultiSolver](#MultiSolver)|
 |presenceChecker|PresenceChecker|[localstore](../LocalStore/localstore.md)|
 |log|Logger|日志|
@@ -175,9 +175,11 @@
 
 * *handleTask(ctx context.Context, locationRecord \*ObjectLocationRecord)*
 
-  使用RemoteStorageSelector获取需要存储address的节点，然后跟locationRecords里面对比，如果locationRecord里面不好喊应该存储的节点信息，将nodeinfo添加到其中然后向所有locationRecord.Locations中Put object
+  使用RemoteStorageSelector获取需要存储address的节点，然后跟locationRecords里面对比，如果locationRecord里面不包含应该存储的节点信息，将nodeinfo添加到其中然后向所有locationRecord.Locations中Put object
 
 ## LocationDetector
+
+查找所有存储了address指定的object的节点列表
 
 ### ObjectLocator
 
@@ -197,7 +199,7 @@
 |weightComparator|WeightComparator|[MultiSolver](#MultiSolver)|
 |objectLocator|ObjectLocator|[ObjectLocatoer](#ObjectLocater)|
 |reservationRatioReceiver|ReservationRatioReceiver|[MultiSolver](#MultiSolver)|
-|presenceChecker|PresenceChecker|LoalStore|
+|presenceChecker|PresenceChecker|[localstore](../LocalStore/localstore.md)|
 |log|Logger|输出日志|
 |taskChanCap|TaskChanCap|配置文件读取|
 |resultTimeout|ResultTimeout|配置文件读取|
@@ -225,6 +227,8 @@
 
 ## StorageValidator
 
+对所有locations中存储了object的节点进行object验证，根据ReservationRatio计算shortage
+
 |Field|Type|Description|
 |-|-|-|
 |ObjectVerifier|ObjectVerifier|[ObjectVirifier](#ObjectVerifier)|
@@ -235,20 +239,203 @@
 |addrstore|AddrStore|[AddressStore](./audit.md#AddressStore)|
 
 * *SubscribeReplication(ch chan<- \*ReplicateTask)*
+
+  将replicateResultChan设置为ch
+
 * *SubscribeGarbage(ch chan<- Address)*
+
+  将garbageChan设置为ch
+
 * *Process(ctx context.Context) chan<- \*ObjectLocationRecord*
+
+  创建一个传递类型为ObjectLocationRecord的channel，然后调用processRoutine进行监听，并返回此channel
+
 * *writeReplicateResult(replicateTask \*ReplicateTask)*
+
+  将relicateTask写入replicationResultChannel
+
 * *writeGarbage(addr Address)*
+
+  将address写入garbageChan
+
 * *processRoutine(ctx context.Context, taskChan <-chan \*ObjectLocationRecord)*
+
+  监听channel，如果收到ObjectLocationRecord然后检查本地是否存储，如果没有执行handleTask
+
 * *handleTask(ctx context.Context, locationRecord \*ObjectLocationRecord)*
+
+  遍历所有ObjectLocationRecord中的Locations, 校验其中的object，并统计shortage，如果shortage大于0，就将shortage计入ReplicationTask调用writeReplicationResult写入replicationResultChannel, 如果所有Location中WeightGreater的数量大于Object的ReservationRatio，就调用wirteGarbage将address写入garbageChan
 
 ## ObjectReplicator
 
+根据task中的shortage数量向应该存储object的节点推送object
 
+|Field|Type|Description|
+|-|-|-|
+|objectReceptacle  |    ObjectReceptacle|[ObjectStorage](#ObjectStorage)|
+|remoteStorageSelector |RemoteStorageSelector|[MultiSolver](#MultiSolver)|
+|objectSource     |     ObjectSource|[ObjectStorage](#ObjectStorage)|
+|presenceChecker    |   PresenceChecker|[localstore](../LocalStore/localstore.md)|
+|log        |           *zap.Logger|日志输出|
+|taskChanCap |  int|配置中读取|
+|resultTimeout |time.Duration|配置中读取|
+|resultChan  |  chan<- *ReplicateResult|nil|
+
+* *Subscribe(ch chan<- \*ReplicateResult)*
+
+  将resultChan设置为ch
+
+* *Process(ctx context.Context)*
+
+  创建一个传递类型为ReplicationTask的channel，调用processRoutine来监听，并将此channel返回
+
+* *writeResult(replicateResult \*ReplicateResult)*
+
+  将replicateResult写入resultChan
+
+* *processRoutine(ctx context.Context, taskChan <-chan \*ReplicateTask)*
+
+  监听taskChan, 如果收到replicateTask并且本地存储了相应的object则调用handleTask处理
+
+* *handleTask(ctx context.Context, task \*ReplicateTask)*
+
+  获取task.Address指定的object，从MultiSolver获取应该存储指定object的节点并附带WeightGreater属性，然后依次调用object.Put将object发送给这些节点
 
 ## Restorer
 
+如果本地没有存储object，从存储了object的其他节点获取object并校验，然后存储到本地
 
+|Field|Type|Description|
+|-|-|-|
+|objectVerifier   |     ObjectVerifier|[ObjectvValidator](#ObjectValidator)|
+|remoteStorageSelector |RemoteStorageSelector|[MultiSolver](#MultiSolver)|
+|objectReceptacle  |    ObjectReceptacle|[ObjectStorage](#ObjectStorage)|
+|epochReceiver    |     EpochReceiver|[MultiSolver](#MultiSolver)|
+|presenceChecker  |     PresenceChecker|[localstore](../LocalStore/localstore.md)|
+|log       |            *zap.Logger|日志输出|
+|taskChanCap |  int|配置中读取|
+|resultTimeout |time.Duration|配置中读取|
+|resultChan |   chan<- Address|nil|
+
+* *Subscribe(ch chan<- Address)*
+
+  将resultChan设置为ch
+
+* *Process(ctx context.Context)*
+
+  创建一个传递参数为Address的channel，然后调用processRoutine监听，并返回此channel
+
+* *writeResult(refInfo Address)*
+
+  将address写入resultChan
+
+* *processRoutine(ctx context.Context, taskChan <-chan Address)*
+
+  监听taskChan，如果收到address并且本地包含此object，就调用handleTask处理
+
+* *handleTask(ctx context.Context, addr Address)*
+
+  从MutiSolver中获取所有应该存储object的节点尝试从节点获取object并校验，如果成功然后存储到本地
 
 ## ReplicationManager
 
+### GarbageStore
+
+没有完整实现
+
+|Field|Type|Description|
+|-|-|-|
+||*sync.Mutex|互斥锁|
+|Items|[]Address|垃圾列表|
+
+* *put(addr Address)*
+
+  将addrees放入列表，如果已经存在直接返回
+
+### ReplicationManager
+
+|Field|Type|Description|
+|-|-|-|
+|objectPool   |  ObjectPool |[ObjectPool](#ObjectPool)|
+| managerTimeout| time.Duration||
+|objectVerifier| ObjectVerifier|[ObjectValidator](#ObjectValidator)|
+| log     |       *zap.Logger|日志输出|
+|locationDetector| ObjectLocationDetector|[ObjectLocationDetector](#ObjectLocationDetector)|
+| storageValidator |StorageValidator|[StorageValidator](#StorageValidator)|
+|replicator   |    ObjectReplicator|[ObjectReplicator](#ObjectReplicator)|
+| restorer     |    ObjectRestorer|[ObjectRestorer](#ObjectRestorer)|
+|placementHonorer| PlacementHonorer|[PlacementHonorer](#PlacementHonorer)|
+|detectLocationTaskChan| chan<- Address|internal task channels|
+|restoreTaskChan   |     chan<- Address|internal task channels|
+|pushTaskTimeout |time.Duration|配置中读取|
+|replicationResultChan| <-chan *ReplicateResult|internal result channels|
+|restoreResultChan   |  <-chan Address|internal result channels|
+|garbageChanCap  |       int|配置中读取|
+|replicateResultChanCap| int|配置中读取|
+|restoreResultChanCap |  int|配置中读取|
+|garbageChan  |<-chan Address||
+|garbageStore |*garbageStore|[GarbageStore](#GarbageStore)|
+|epochCh  | chan uint64||
+|scheduler| Scheduler|[ReplicationScheduler](#ReplicationScheduler)|
+|poolSize  |        int|配置中读取|
+|poolExpansionRate| float64|配置中读取|
+
+* *Name() string*
+
+  返回 "BEAGLE_REDUNDANT_COPIES"
+
+* *HandleEpoch(ctx context.Context, epoch uint64)*
+
+  注册到MorphClient监听到new epoch事件时触发。
+
+  将epoch写入epoch channel
+
+* *Process(ctx context.Context)*
+
+  启动[ObjectRestorer](#ObjectRestorer)并将返回的channel设置给restoreTaskChan, 创建一个传递类型为adress的channel赋值给restoreResultChan, 并用其订阅[ObjectRestorer](#ObjectRestorer)的结果通道
+
+  启动[ObjectLocationDetector](#ObjectLocationDetector)并将返回的channel赋值给detectLocationTaskChan
+
+  启动[StorageValidator](#StorageValidator)的process过程并将返回的channel作为结果通道订阅到[PlacementHonorer](#PlacementHonorer)
+
+  启动[PlacementHonorer](#PlacementHonorer)的process过程，并将返回的channel作为结果通道订阅到[ObjectLocationDetector](#ObjectLocationDetector)
+
+  创建一个传递参数为ReplicationResult的channel作为结果通道订阅到[ObjectReplicator](#ObjectReplicator),并将其赋值给replicateResultChan
+
+  启动[ObjectReplicator](#ObjectReplicator)的process过程，并将返回的channel作为结果通道订阅到[StorageValidator](#StorageValidator)
+
+  创建一个传递参数为address的channel作为结果通道订阅到[StorageValidator](#StorageValidator)
+
+  启动taskRoutine和resultRoutine,调用processRoutine
+
+* *writeDetectLocationTask(addr Address)*
+
+  向detectLocationTaskChan写入address
+
+* *writeRestoreTask(addr Address)*
+
+  向restoreTaskChan写入address
+
+* *resultRoutine(ctx context.Context)*
+
+  如果收到了restoreResultChan的address打印日志提示成功restored object
+
+  如果收到了replicationChan的打印日志提示成功replicated
+
+  如果收到了garbageChan的address，调用[GarbageStore](#GarbageStore).Put写入
+
+* *taskRoutine(ctx context.Context)*
+
+  如果objectpool中又任务取出address，则调用distributeTask
+
+* *processRoutine(ctx context.Context)*
+
+  当监听到epochCh有新的时隙到达时，调用[ReplicationScheduler](#ReplicationScheduler)的*SelectForReplication*方法返回需要处理的所有任务，然后如果[ObjectPool](#ObjectPool)中有为完成任务, 则将新任务中减去未完成任务数，更新到ObjectPool中，如果没有未完成的任务，则根据扩展比率适当扩大一定比率的任务，更新到ObjectPool
+
+* *distributeTask(ctx context.Context, addr Address)*
+
+  首先使用[ObjectValidator](#ObjectValidator)校验address指定的object，然后如果校验失败，调用wirteRestoreTask(addr)
+
+  调用writeDetectLocationTask(addr)
+
+  
