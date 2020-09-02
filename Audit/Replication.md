@@ -438,4 +438,4 @@
 
   调用writeDetectLocationTask(addr)
 
-  
+  ![流程图](./replication.png)
