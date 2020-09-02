@@ -1,6 +1,6 @@
 # Replication
 
-## [AddressStore](./audit.md#AddressStore)
+## [AddressStore](./SelectiveContainerExecutor.md#AddressStore)
 
 ## MultiSolver
 
@@ -101,9 +101,9 @@
 
 |Field|Type|Description|
 |-|-|-|
-|as  |     AddressStore|[AddressStore](./audit.md#AddressStore) |
+|as  |     AddressStore|[AddressStore](./SelectiveContainerExecutor.md#AddressStore) |
 |ls   |    localstore.Localstore|[localstore](../LocalStore/localstore.md)|
-|executor| SelectiveContainerExecutor|[SelectiveCotnainerExecutor](./audit.md)|
+|executor| SelectiveContainerExecutor|[SelectiveCotnainerExecutor](./SelectiveContainerExecutor.md)|
 |log   |   \*zap.Logger|日志|
 |saltSize  | int ||
 |maxRngSize |uint64||
@@ -134,7 +134,7 @@
 |Field|Type|Description|
 |-|-|-|
 |ls|LocalStore|[localstore](../LocalStore/localstore.md)|
-|executor|SelectiveContainerExecutor |[SelectiveCotnainerExecutor](./audit.md)|
+|executor|SelectiveContainerExecutor |[SelectiveCotnainerExecutor](./SelectiveContainerExecutor.md)|
 |log|Logger||
 
 * *Put(ctx context.Context, params replication.ObjectStoreParams) error*
@@ -185,7 +185,7 @@
 
 |Field|Type|Description|
 |-|-|-|
-|executor|SelectiveContainerExecutor|[SelectiveCotnainerExecutor](./audit.md) |
+|executor|SelectiveContainerExecutor|[SelectiveCotnainerExecutor](./SelectiveContainerExecutor.md) |
 |log|Logger|打印日志|
 
 * *LocateObject(ctx context.Context, addr Address) (res []multiaddr.Multiaddr, err error)*
@@ -236,7 +236,7 @@
 |presenceChecker|PresenceChecker|[localstore](../LocalStore/localstore.md)|
 |taskChanCap|TaskChanCap|配置文件读取|
 |resultTimeout|ResultTimeout|配置文件读取|
-|addrstore|AddrStore|[AddressStore](./audit.md#AddressStore)|
+|addrstore|AddrStore|[AddressStore](./SelectiveContainerExecutor.md#AddressStore)|
 
 * *SubscribeReplication(ch chan<- \*ReplicateTask)*
 
